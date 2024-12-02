@@ -1,0 +1,371 @@
+---
+title: "Entrega grupal"
+author: "Julia Martins Guardia (DNI: 16655897-X), Milana Walden (PAS:LGCRYV2T7 00000000-X),Samuel Martinez (PAS: G27838448), Sonia Pérez Muñoz (DNI: 53717366-S)"
+format:
+  revealjs:
+    slide_number: true
+    theme: [style.scss]
+    embed-resources: true
+    title-slide: false
+execute: 
+  echo: true
+---
+
+<section data-background-image="imagen.jpg" data-background-size="cover" data-background-position="center">
+  
+  <h1 style="color: black; text-align: center;">Entrega grupal</h1>
+  <p style="color: black; text-align: center; font-size: 1.2em;">
+    Julia Martins Guardia (DNI: 16655897-X)<br>
+    Milana Walden (PAS: LGCRYV2T7)<br>
+    Samuel Martinez (PAS: G27838448)<br>
+    Sonia Pérez Muñoz (DNI: 53717366-S)
+  </p>
+  
+</section>
+
+---
+
+## <span style="color: #dd4d07;">Paquetes necesarios</span> {background-color="#8bdbfa"}
+
+> Definimos inicialmente todos los paquetes que vamos necesitar para el trabajo.
+
+```{r}
+rm(list = ls())
+library(tidyverse)
+library(lubridate)
+library(dplyr)
+library(stringr)
+library(glue)
+library(forcats)
+library(ggplot2) 
+```
+
+------------------------------------------------------------------------
+
+## <span style="color: #dd4d07;">Datos</span> {background-color="#8bdbfa"}
+
+La práctica se basará en los **archivos de datos electorales** que se indican a continuación, recopilando datos sobre las elecciones al Congreso de los Diputados en España desde 2008 hasta la actualidad, así como encuestas, códigos de municipios y abreviaturas
+
+```{r}
+election_data <- read_csv(file = "./data/datos_elecciones_brutos.csv")
+cod_mun <- read_csv(file = "./data/cod_mun.csv")
+surveys <- read_csv(file = "./data/historical_surveys.csv")
+abbrev <- read_csv(file = "./data/siglas.csv")
+```
+
+------------------------------------------------------------------------
+
+## <span style="color: #dd4d07;">Datos</span> {background-color="#8bdbfa"}
+
+-   `election_data`: archivo con las elecciones al congreso
+-   `cod_mun`: archivo con los códigos y nombres de cada municipio
+-   `abbrev`: siglas de cada partido
+-   `surveys`: encuestas electorales desde 1982.
+
+------------------------------------------------------------------------
+
+## <span style="color: #dd4d07;">Datos</span> {background-color="#8bdbfa"}
+
+-   `surveys`: encuestas electorales desde 1982.
+    -   `type_survey`: tipo de encuesta (nacional, regional...)
+    -   `date_elec`: fecha de las futuras elecciones
+    -   `id_pollster`, `pollster`, `media`: id y nombre de la empresa encuestadora, así como medio que la encargó
+    -   `field_date_from`, `field_date_to`: fechas de inicio y fin del trabajo de la encuesta
+    -   `exit_poll`: ¿es una encuesta a pie de urna?
+    -   `size`: tamaño muestral de la encuesta
+    -   `turnout`: participación (estimación)
+    
+---
+
+## <span style="color: #dd4d07;">Datos</span> {background-color="#8bdbfa"}
+
+-   `election_data`: archivo con las elecciones al congreso
+    -   `tipo_eleccion`: tipo de elecion (nacional, regional...)
+    -   `anno`: Año de la eleccion
+    -   `mes`: Mes de la eleccion
+    -   `vuelta`: 
+    -   `codigo_ccaa`: Código de la comunidad autónoma
+    -   `codigo_provincia`:Código de la provincia
+    -   `codigo_municipio`: Código del municipio
+    -   `codigo_distrito_electoral`: Código del distrito
+    -   `numero_mesas`: Número de mesas disponibles
+    
+---
+
+## <span style="color: #dd4d07;">Datos</span> {background-color="#8bdbfa"}
+
+-   `election_data`: archivo con las elecciones al congreso
+    -   `censo`: Número de personas que compareceran a las elecciones 
+    -   `participacion_1`: 
+    -   `participacion_2`: 
+    -   `votos_blancos`: Cantidad de votos en blanco
+    -   `votos_nulos`: Cantidad de votos nulos 
+    -   `votos_candidaturas`: 
+
+------------------------------------------------------------------------
+
+## <span style="color: #dd4d07;">Objetivos</span> {background-color="#8bdbfa"}
+
+El objetivo de la entrega es **realizar un análisis de los datos electorales**, llevando a cabo la depuración, los resúmenes y los gráficos que consideres necesarios, tanto de los resultados como de la precisión de las encuestas electorales.
+
+En concreto, debes trabajar únicamente en el **período de tiempo que incluye las elecciones desde 2008 hasta las últimas elecciones de 2019**
+
+------------------------------------------------------------------------
+
+## <span style="color: #dd4d07;">Pasos seguidos para la manipulación de los datos</span> {background-color="#8bdbfa"} 
+
+
+### <span style="color: #f08b27;">Paso 1: Transformación de los datos al formato tidy</span> 
+
+```{r}
+# Transforma los datos en tidydata 
+surveys_tidy <- surveys |>  
+  pivot_longer( cols = "UCD":"EV", 
+                names_to = "partidos", 
+                values_to = "prob_votos",
+                values_drop_na = TRUE
+  )
+
+head(surveys_tidy)
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#8bdbfa"}
+
+### <span style="color: #f08b27;">Paso 1: Transformación de los datos al formato tidy</span> 
+
+```{r}
+
+election_data_tidy <- election_data |>  
+  pivot_longer( cols = "BERDEAK-LOS VERDES":"COALICIÓN POR MELILLA", 
+                names_to = "partidos", 
+                values_to = "votos" ,
+                values_drop_na = TRUE
+  )
+
+head(election_data_tidy)
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#8bdbfa"}
+
+### <span style="color: #f08b27;">Paso 2: Union del codigo del municipio de la base de datos "election_data_tidy"</span> 
+
+```{r}
+election_data_tidy <- election_data_tidy |> 
+  unite(c("codigo_ccaa","codigo_provincia", "codigo_municipio"),col="cod_mun",sep='-')
+
+head(election_data_tidy)
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#8bdbfa"}
+
+### <span style="color: #f08b27;">Paso 3: Reagrupa los partidos de los datos</span> 
+
+```{r}
+
+# Reagrupa los partidos de los datos "surveys_tidy"
+surveys_tidy <- surveys_tidy |> 
+  mutate(partidos = if_else(partidos %in% c('PSOE','PP','CS','BNG','UP','ERC','VOX','EH-BILDU','PNV'), partidos,"OTROS"))
+
+head(surveys_tidy)
+```
+
+---
+
+##  {background-color="#8bdbfa"}
+
+```{r}
+# Reagrupa los partidos de los datos "election_data_tidy"
+election_data_tidy <- election_data_tidy %>%
+  mutate(partidos = case_when(
+    str_detect(partidos,"PARTIDO SOCIALISTA OBRERO ESPAÑOL") ~ "PSOE",
+    str_detect(partidos,"PARTIDO POPULAR") ~ "PP",
+    str_detect(partidos,"CIUDADANOS") ~ "CS",
+    str_detect(partidos,"PARTIDO NACIONALISTA VASCO") ~ "PNV",
+    str_detect(partidos,"BLOQUE NACIONALISTA GALEGO") ~ "BNG",
+    str_detect(partidos,"UNIDAS PODEMOS") ~ "UP",
+    str_detect(partidos,"ESQUERRA REPUBLICANA DE CATALUNYA") ~ "ERC",
+    str_detect(partidos,"EUSKAL HERRIA BILDU") ~ "EH - BILDU",
+    str_detect(partidos,"VOX") ~ "VOX",
+    TRUE ~ "OTROS"
+  ))
+
+head(election_data_tidy)
+
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#8bdbfa"}
+
+### <span style="color: #f08b27;">Paso 4: Seleción de los datos</span> 
+
+Se aplicaron filtros a la base de datos inicial para cumplir con el objetivo del trabajo, considerando el período de 2008 a 2019 y la selección predefinida de los siguientes partidos:
+
+<div style="display: flex; align-items: center; justify-content: space-between;">
+  <div style="width: 50%; font-size: 0.7em;">
+  <ul>
+  
+-   PARTIDO SOCIALISTA OBRERO ESPAÑOL (PSOE)
+-   PARTIDO POPULAR (PP)
+-   CIUDADANOS (CS)
+-   PARTIDO NACIONALISTA VASCO (PNV)
+-   BLOQUE NACIONALISTA GALLEGO (BNG)
+-   UNIDAS PODEMOS - IU (UP)
+-   ESQUERRA REPUBLICANA DE CATALUNYA (ERC)
+-   EH - BILDU
+-   VOX
+   </ul>
+  </div>
+
+<div style="width: 40%; text-align: right; display: flex; align-items: center; background-color: transparent; ">
+  <img src="imagen2.jpg" alt="Descrição da Imagem" style="width: 150%; max-width: 500px; border: none;">
+</div>
+</div>
+
+------------------------------------------------------------------------
+
+##  {background-color="#8bdbfa"}
+
+### <span style="color: #f08b27;">Paso 4: Seleción de los datos</span> 
+
+```{r}
+# Filtro aplicado en los datos de surveys_tidy
+surveys_tidy_filtered <- surveys_tidy |>  
+  mutate(date_elec = as.Date(date_elec, format = "%Y-%m-%d"), # paquete lubridate
+    field_date_to = as.Date(field_date_to, format = "%Y-%m-%d"), 
+    field_date_from = as.Date(field_date_from, format = "%Y-%m-%d"),
+    ano_elec = year(date_elec), # paquete necesario lubridate
+    tiempo_trabajo_campo = as.numeric(field_date_to-field_date_from)) |> 
+  filter(2008 <= ano_elec & ano_elec <= 2019 
+         & exit_poll == FALSE 
+         & (size >= 500 | !is.na(size))
+         & tiempo_trabajo_campo >= 1)
+
+# Filtro aplicado en los datos de election_data_tidy
+election_data_tidy_filtered <- election_data_tidy |>  
+  filter(partidos %in% c('PSOE', 'PP', 'CS', 'PNV', 'BNG', 'UP', 'ERC', 'EH - BILDU', 'VOX' ))
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#8bdbfa"}
+
+### <span style="color: #f08b27;">Paso 5: Join de las tablas</span> 
+
+```{r}
+
+# Selecion previa de las variables 
+election_data_tidy_select <- election_data_tidy_filtered |>
+  select('anno', 'cod_mun', 'numero_mesas','censo', 'participacion_1', 'participacion_2', 'votos_blancos', 'votos_nulos','votos_candidaturas','partidos','votos')
+
+surveys_tidy_select <- surveys_tidy_filtered |>
+  select('size', 'turnout', 'partidos', 'prob_votos', 'ano_elec','tiempo_trabajo_campo') |> 
+  rename('tamano_muestra' = 'size',
+         'estimacion_participac' = 'turnout')
+
+# Join
+#datos_election <- election_data_tidy_select |> 
+#  left_join(surveys_tidy_select,
+#            by = c("anno" = "ano_elec", "partidos" = "partidos")) |> 
+#  left_join(cod_mun, by = "cod_mun")
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#8bdbfa"}
+
+#### <span style="color: #f08b27;">Pregunta 1: ¿Qué partido fue el ganador en los municipios con más de 100.000 habitantes (censo) en cada una de las elecciones?</span> 
+
+```{r}
+
+election_data_tidy_select |> 
+  filter(censo > 100000) |> 
+  summarise(vencedor = partidos[which.max(votos)], .by = c(anno, cod_mun))
+
+```
+
+---
+
+##  {background-color="#8bdbfa"}
+
+#### <span style="color: #f08b27;">Pregunta 2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?</span> 
+
+```{r}
+
+# Funcion para encuentrar el partido que ha quedado en segundo
+partido_vencedor <- function(partido_venc){
+  election_data_tidy_select |> 
+  filter(censo > 100000) |>  
+    group_by(anno, cod_mun) |>   
+    slice_max(votos, n = 2, with_ties = FALSE) |>   
+    mutate(posicao = row_number()) |>
+    summarise(
+    primero_partido = partidos[posicao == 1],
+    segundo_partido = partidos[posicao == 2]) |> 
+    filter(primero_partido == partido_venc)
+}
+
+```
+---
+
+##  {background-color="#8bdbfa"}
+
+#### <span style="color: #f08b27;">Pregunta 2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?</span>
+
+```{r}
+
+head(partido_vencedor("PSOE"))
+
+```
+
+```{r}
+
+head(partido_vencedor("PP"))
+
+```
+
+---
+
+##  {background-color="#8bdbfa"}
+
+#### <span style="color: #f08b27;">Pregunta 3: ¿Cómo calibrar el error de las encuestas (recordemos que las encuestas son de intención de voto a nivel nacional)?</span>  
+
+---
+
+##  {background-color="#8bdbfa"}
+
+#### <span style="color: #f08b27;">Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?</span>  
+
+Siguiendo la clasificación establecida por el Ministerio de Agricultura y Pesca de España, se definen las zonas de la siguiente manera:
+
+- Rural: Aglomeraciones con menos de 2.000 habitantes.
+- Semi-rural: Aglomeraciones con hasta 10.000 habitantes.
+- Urbano: Aglomeraciones con más de 10.000 habitantes.
+
+---
+
+##  {background-color="#8bdbfa"}
+
+#### <span style="color: #f08b27;">Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?</span> 
+
+Con base en esta clasificación, hemos creado la variable "tipo_zona" como paso previo al análisis.
+
+```{r}
+election_data_tidy_select <- election_data_tidy_select %>%
+  mutate(tipo_zona = case_when(
+    censo < 2000 ~ "Rural",
+    censo >= 2000 & censo <= 10000 ~ "Semiurbano",
+    censo > 10000 ~ "Urbano"
+  ))
+
+head(election_data_tidy_select)
+```
+
+
+
