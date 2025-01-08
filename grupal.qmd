@@ -1,6 +1,6 @@
 ---
-title: "Entrega grupal"
-author: "Julia Martins Guardia (DNI: 16655897-X), Milana Walden (PAS:LGCRYV2T7 00000000-X),Samuel Martinez (PAS: G27838448), Sonia Pérez Muñoz (DNI: 53717366-S)"
+title: '<span style="color:#247292;">Entrega grupal</span>'
+author: 'Julia Martins Guardia (DNI: 16655897-X)<br>Milana Walden (PAS: LGCRYV2T7 00000000-X)<br>Samuel Martinez (PAS: G27838448)<br>Sonia Pérez Muñoz (DNI: 53717366-S)'
 title-slide-attributes: 
   data-background-image: "imagen.jpg"
 format:
@@ -13,10 +13,9 @@ execute:
   echo: true
 ---
 
+## [Paquetes necesarios]{style="color: #247292;"} {background-color="#e6f0fa"}
 
-## [Paquetes necesarios]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
-
-> Definimos inicialmente todos los paquetes que vamos necesitar para el trabajo.
+Definimos inicialmente todos los paquetes que vamos necesitar para el trabajo.
 
 ```{r}
 #| code-fold: true
@@ -33,7 +32,7 @@ library(ggplot2)
 
 ------------------------------------------------------------------------
 
-## [Datos]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
+## [Carga de las bases de datos]{style="color: #247292;"} {background-color="#e6f0fa"}
 
 La práctica se basará en los **archivos de datos electorales** que se indican a continuación, recopilando datos sobre las elecciones al Congreso de los Diputados en España desde 2008 hasta la actualidad, así como encuestas, códigos de municipios y abreviaturas
 
@@ -48,7 +47,9 @@ abbrev <- read_csv(file = "./data/siglas.csv")
 
 ------------------------------------------------------------------------
 
-## [Datos]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
+## [Bases de datos]{style="color: #247292;"} {background-color="#e6f0fa"}
+
+El trabajo consta de 4 bases de datos:
 
 -   `election_data`: archivo con las elecciones al congreso
 -   `cod_mun`: archivo con los códigos y nombres de cada municipio
@@ -57,7 +58,34 @@ abbrev <- read_csv(file = "./data/siglas.csv")
 
 ------------------------------------------------------------------------
 
-## [Datos]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
+## [Datos]{style="color: #247292;"} {background-color="#e6f0fa"}
+
+-   `election_data`: archivo con las elecciones al congreso
+    -   `tipo_eleccion`: tipo de elecion (nacional, regional...)
+    -   `anno`: Año de la eleccion
+    -   `mes`: Mes de la eleccion
+    -   `vuelta`
+    -   `codigo_ccaa`: Código de la comunidad autónoma
+    -   `codigo_provincia`:Código de la provincia
+    -   `codigo_municipio`: Código del municipio
+    -   `codigo_distrito_electoral`: Código del distrito
+    -   `numero_mesas`: Número de mesas disponibles
+    
+------------------------------------------------------------------------
+
+## [Datos]{style="color: #247292;"} {background-color="#e6f0fa"}
+
+-   `election_data`: archivo con las elecciones al congreso
+    -   `censo`: Número de personas del municipio
+    -   `participacion_1`
+    -   `participacion_2`
+    -   `votos_blancos`: Cantidad de votos en blanco
+    -   `votos_nulos`: Cantidad de votos nulos
+    -   `votos_candidaturas`: Cantidad de votos validos
+
+------------------------------------------------------------------------
+
+## [Datos]{style="color: #247292;"} {background-color="#e6f0fa"}
 
 -   `surveys`: encuestas electorales desde 1982.
     -   `type_survey`: tipo de encuesta (nacional, regional...)
@@ -70,34 +98,7 @@ abbrev <- read_csv(file = "./data/siglas.csv")
 
 ------------------------------------------------------------------------
 
-## [Datos]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
-
--   `election_data`: archivo con las elecciones al congreso
-    -   `tipo_eleccion`: tipo de elecion (nacional, regional...)
-    -   `anno`: Año de la eleccion
-    -   `mes`: Mes de la eleccion
-    -   `vuelta`
-    -   `codigo_ccaa`: Código de la comunidad autónoma
-    -   `codigo_provincia`:Código de la provincia
-    -   `codigo_municipio`: Código del municipio
-    -   `codigo_distrito_electoral`: Código del distrito
-    -   `numero_mesas`: Número de mesas disponibles
-
-------------------------------------------------------------------------
-
-## [Datos]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
-
--   `election_data`: archivo con las elecciones al congreso
-    -   `censo`: Número de personas del municipio
-    -   `participacion_1`
-    -   `participacion_2`
-    -   `votos_blancos`: Cantidad de votos en blanco
-    -   `votos_nulos`: Cantidad de votos nulos
-    -   `votos_candidaturas`: Cantidad de votos validos
-
-------------------------------------------------------------------------
-
-## [Objetivos]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
+## [Objetivos]{style="color: #247292;"} {background-color="#e6f0fa"}
 
 El objetivo de la entrega es **realizar un análisis de los datos electorales**, llevando a cabo la depuración, los resúmenes y los gráficos que consideres necesarios, tanto de los resultados como de la precisión de las encuestas electorales.
 
@@ -105,14 +106,15 @@ En concreto, debes trabajar únicamente en el **período de tiempo que incluye l
 
 ------------------------------------------------------------------------
 
-## [Pasos seguidos para la manipulación de los datos]{style="color: #dd4d07;"} {background-color="#8bdbfa"}
+## [Limpieza de la base de datos]{style="color: #247292;"} {background-color="#e6f0fa"}
 
-### [Paso 1: Transformación de los datos al formato tidy]{style="color: #f08b27;"}
+##### [Paso 1: Transformación de los datos al formato tidy]{style="color: #f08b27;"} {background-color="#e6f0fa"}
 
 ```{r}
 #| code-fold: true
+#| results: "hide"
 
-# Transforma los datos en tidydata 
+# Transforma los datos de surveys en tidydata 
 surveys_tidy <- surveys |>  
   pivot_longer( cols = "UCD":"EV", 
                 names_to = "partidos", 
@@ -120,162 +122,124 @@ surveys_tidy <- surveys |>
                 values_drop_na = TRUE
   )
 
-head(surveys_tidy)
-```
-
-------------------------------------------------------------------------
-
-##  {background-color="#8bdbfa"}
-
-### [Paso 1: Transformación de los datos al formato tidy]{style="color: #f08b27;"}
-
-```{r}
-#| code-fold: true
-
+# Transforma los datos de election_data en tidydata 
 election_data_tidy <- election_data |>  
   pivot_longer( cols = "BERDEAK-LOS VERDES":"COALICIÓN POR MELILLA", 
                 names_to = "partidos", 
                 values_to = "votos" ,
                 values_drop_na = TRUE
-  )
+  ) |> unite(c("codigo_ccaa","codigo_provincia", "codigo_municipio"),col="cod_mun",sep='-')
 
-head(election_data_tidy)
+
 ```
 
-------------------------------------------------------------------------
-
-##  {background-color="#8bdbfa"}
-
-### [Paso 2: Union del codigo del municipio de la base de datos "election_data_tidy"]{style="color: #f08b27;"}
+##### [Paso 2: Unión de las bases de datos]{style="color: #f08b27;"} {background-color="#e6f0fa"}
 
 ```{r}
 #| code-fold: true
+#| results: "hide"
 
+# Union de election_data_tidy con las siglas de los partidos y con los nombres de municipios
 election_data_tidy <- election_data_tidy |> 
-  unite(c("codigo_ccaa","codigo_provincia", "codigo_municipio"),col="cod_mun",sep='-')
+  left_join(abbrev, by = c("partidos" = "denominacion")) |> 
+  left_join(cod_mun, by = c("cod_mun" = "cod_mun"))
 
+
+# Union de surveys_tidy con las siglas de los partidos
+surveys_tidy <- surveys_tidy |> 
+  left_join(abbrev, by = c("partidos" = "siglas"))
+
+surveys_tidy <- surveys_tidy |> 
+  rename(siglas = partidos)      # Cambiar "partidos" a "siglas" 
+
+surveys_tidy <- surveys_tidy |> 
+  rename( partidos = denominacion)  # Cambiar "denominacion" a "partidos"
+
+# Verificar las uniones
+head(surveys_tidy)
 head(election_data_tidy)
+
 ```
 
-------------------------------------------------------------------------
-
-##  {background-color="#8bdbfa"}
-
-### [Paso 3: Reagrupa los partidos de los datos]{style="color: #f08b27;"}
+##### [Paso 3: Reagrupación de los partidos de los datos]{style="color: #f08b27;"} {background-color="#e6f0fa"}
 
 ```{r}
 #| code-fold: true
+#| results: "hide"
 
 # Reagrupa los partidos de los datos "surveys_tidy"
+
 surveys_tidy <- surveys_tidy |> 
-  mutate(partidos = if_else(partidos %in% c('PSOE','PP','CS','BNG','UP','ERC','VOX','EH-BILDU','PNV'), partidos,"OTROS"))
-
+  mutate(partidos = case_when(
+    str_detect(partidos,"SOCIALISTA") ~ "PSOE",
+    str_detect(partidos,"PARTIDO POPULAR") ~ "PP",
+    str_detect(partidos,"CIUDADANOS") ~ "CS",
+    str_detect(partidos,"VASCO") ~ "PNV",
+    str_detect(partidos,"BLOQUE NACIONALISTA GALEGO") ~ "BNG",
+    str_detect(partidos,"PODEMOS") ~ "UP",
+    str_detect(partidos,"ESQUERRA.*CATALUNYA|CATALUNYA.*ESQUERRA") ~ "ERC",
+    str_detect(partidos,"BILDU") ~ "EH - BILDU",
+    str_detect(partidos,"VOX") ~ "VOX",
+    TRUE ~ "OTROS"
+  ))
+  
 head(surveys_tidy)
-```
-
-------------------------------------------------------------------------
-
-##  {background-color="#8bdbfa"}
-
-```{r}
-#| code-fold: true
 
 # Reagrupa los partidos de los datos "election_data_tidy"
 election_data_tidy <- election_data_tidy |> 
   mutate(partidos = case_when(
-    str_detect(partidos,"PARTIDO SOCIALISTA OBRERO ESPAÑOL") ~ "PSOE",
+    str_detect(partidos,"SOCIALISTA") ~ "PSOE",
     str_detect(partidos,"PARTIDO POPULAR") ~ "PP",
     str_detect(partidos,"CIUDADANOS") ~ "CS",
-    str_detect(partidos,"PARTIDO NACIONALISTA VASCO") ~ "PNV",
+    str_detect(partidos,"VASCO") ~ "PNV",
     str_detect(partidos,"BLOQUE NACIONALISTA GALEGO") ~ "BNG",
-    str_detect(partidos,"UNIDAS PODEMOS") ~ "UP",
-    str_detect(partidos,"ESQUERRA REPUBLICANA DE CATALUNYA") ~ "ERC",
-    str_detect(partidos,"EUSKAL HERRIA BILDU") ~ "EH - BILDU",
+    str_detect(partidos,"PODEMOS") ~ "UP",
+    str_detect(partidos,"ESQUERRA.*CATALUNYA|CATALUNYA.*ESQUERRA") ~ "ERC",
+    str_detect(partidos,"BILDU") ~ "EH - BILDU",
     str_detect(partidos,"VOX") ~ "VOX",
     TRUE ~ "OTROS"
   ))
-
-head(election_data_tidy)
+election_data_tidy
 ```
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+## [Limpieza de la base de datos]{style="color: #247292;"} {background-color="#e6f0fa"}
 
-### [Paso 4: Seleción de los datos]{style="color: #f08b27;"}
+##### [Paso 4: Filtro de datos]{style="color: #f08b27;"} {background-color="#e6f0fa"}
 
-Se aplicaron filtros a la base de datos inicial para cumplir con el objetivo del trabajo, considerando el período de 2008 a 2019 y la selección predefinida de los siguientes partidos:
-
-<div style="display: flex; align-items: center; justify-content: space-between;">
-
-<div style="width: 50%; font-size: 0.7em;">
-
-<ul>
-
--   PARTIDO SOCIALISTA OBRERO ESPAÑOL (PSOE)
-
--   PARTIDO POPULAR (PP)
-
--   CIUDADANOS (CS)
-
--   PARTIDO NACIONALISTA VASCO (PNV)
-
--   BLOQUE NACIONALISTA GALLEGO (BNG)
-
--   UNIDAS PODEMOS - IU (UP)
-
--   ESQUERRA REPUBLICANA DE CATALUNYA (ERC)
-
--   EH - BILDU
-
--   VOX
-
-    </ul>
-
-    </div>
-
-::: {style="width: 40%; text-align: right; display: flex; align-items: center; background-color: transparent; "}
-<img src="imagen2.jpg" alt="Descrição da Imagem" style="width: 150%; max-width: 500px; border: none;"/>
-:::
-
-</div>
-
-------------------------------------------------------------------------
-
-##  {background-color="#8bdbfa"}
-
-### [Paso 4: Seleción de los datos]{style="color: #f08b27;"}
+Se aplicaron filtros a la base de datos inicial para cumplir con el objetivo del trabajo:
 
 ```{r}
+#| code-fold: true
+#| results: "hide"
+
 # Filtro aplicado en los datos de surveys_tidy
-surveys_tidy_filtered <- surveys_tidy |>  
+surveys_filtered <- surveys_tidy |>  
   mutate(date_elec = as.Date(date_elec, format = "%Y-%m-%d"), # paquete lubridate
     field_date_to = as.Date(field_date_to, format = "%Y-%m-%d"), 
     field_date_from = as.Date(field_date_from, format = "%Y-%m-%d"),
     ano_elec = year(date_elec), # paquete necesario lubridate
     tiempo_trabajo_campo = as.numeric(field_date_to-field_date_from)) |> 
-  filter(2008 <= ano_elec & ano_elec <= 2019 
+  filter(2008 >= ano_elec & ano_elec <= 2019 
          & exit_poll == FALSE 
          & (size >= 500 | !is.na(size))
          & tiempo_trabajo_campo >= 1)
 
 # Filtro aplicado en los datos de election_data_tidy
-election_data_tidy_filtered <- election_data_tidy |>  
+election_filtered <- election_data_tidy |>  
   filter(partidos %in% c('PSOE', 'PP', 'CS', 'PNV', 'BNG', 'UP', 'ERC', 'EH - BILDU', 'VOX' ))
 ```
 
-------------------------------------------------------------------------
-
-##  {background-color="#8bdbfa"}
-
-### [Paso 5: Join de las tablas]{style="color: #f08b27;"}
-
 ```{r}
+#| code-fold: true
+#| results: "hide"
+
 # Selecion previa de las variables 
-election_data_tidy_select <- election_data_tidy_filtered |>
+election_data_tidy_select <- election_filtered |>
   select('anno', 'cod_mun', 'numero_mesas','censo', 'participacion_1', 'participacion_2', 'votos_blancos', 'votos_nulos','votos_candidaturas','partidos','votos')
 
-surveys_tidy_select <- surveys_tidy_filtered |>
+surveys_tidy_select <- surveys_filtered |>
   select('size', 'turnout', 'partidos', 'prob_votos', 'ano_elec','tiempo_trabajo_campo', 'id_pollster', 'pollster', 'media') |> 
   rename('tamano_muestra' = 'size',
          'estimacion_participac' = 'turnout')
@@ -288,70 +252,273 @@ datos_election <- election_data_tidy_select |>
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+## [EJERCICIOS]{style="color: #247292;"} {background-color="#e6f0fa"}
 
 #### [Pregunta 1: ¿Qué partido fue el ganador en los municipios con más de 100.000 habitantes (censo) en cada una de las elecciones?]{style="color: #f08b27;"}
 
 ```{r}
 #| code-fold: true
-
-datos_election |> 
+tabla_ganadores <- election_filtered |> 
   filter(censo > 100000) |> 
-  summarise(vencedor = partidos[which.max(votos)], .by = c(anno, cod_mun))
+  arrange(municipio, anno, mes, desc(votos)) |> 
+  summarise(vencedor = first(partidos), .by = c(anno, mes, municipio)) 
+```
+
+```{r}
+#| code-fold: true
+# Agrupación de ganadores por año
+ganadores_por_anno <- tabla_ganadores |> 
+  group_by(anno, vencedor) |> 
+  summarise(count = n(), .groups = "drop")
+
+# Identificar los 3 partidos predominantes por número total de municipios ganados
+partidos_predominantes <- ganadores_por_anno |> 
+  group_by(vencedor) |> 
+  summarise(total_municipios = sum(count), .groups = "drop") |> 
+  arrange(desc(total_municipios)) |> 
+  slice_head(n = 3) |> 
+  pull(vencedor)
+
+# Agrupar los partidos no predominantes como "OTROS"
+ganadores_agrupados <- ganadores_por_anno |> 
+  mutate(vencedor = ifelse(vencedor %in% partidos_predominantes, vencedor, "OTROS")) |> 
+  group_by(anno, vencedor) |> 
+  summarise(count = sum(count), .groups = "drop") # Sumar los valores de "OTROS"
+
+# Graficar con los partidos agrupados
+ggplot(ganadores_agrupados, aes(x = anno, y = count, fill = vencedor)) +
+  geom_bar(stat = "identity", position = "stack") +
+   geom_text(
+    aes(
+      label = paste0(count),
+      color = vencedor),
+    position = position_stack(vjust = 0.5), # Centra las etiquetas en las barras
+    size = 3, 
+    color = "white"
+  ) +
+  scale_x_continuous(breaks = unique(ganadores_agrupados$anno),  # Etiquetas de años
+                     labels = unique(ganadores_agrupados$anno)) +
+  scale_fill_manual(
+    values = c(
+      "VOX" = "#80b042",      
+      "PP" = "#004a95",
+      "PSOE" = "#e30613",
+      "UP" = "#a668f3",
+      "CS" = "#ff956a",
+      "PNV" = "#917b66",
+      "ERC" = "#edc158",
+      "OTROS" = "gray" 
+    )
+  ) +
+  labs(
+    title = "Distribución de Partidos Ganadores por Año",
+    x = "Año",
+    y = "Número de Municipios",
+    fill = "Partido Ganador"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "transparent", color = NA),  # Fondo del panel transparente
+    plot.background = element_rect(fill = "transparent", color = NA),   # Fondo general transparente
+    legend.background = element_rect(fill = "transparent", color = NA)  # Fondo de la leyenda transparente
+  )
 
 ```
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+##  {background-color="#e6f0fa"}
 
 #### [Pregunta 2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?]{style="color: #f08b27;"}
 
+Primero identificamos el partido ganador y el segundo partido genador en cada una de las elecciones
+
 ```{r}
-# Funcion para encuentrar el partido que ha quedado en segundo
-partido_vencedor <- function(partido_venc){
-  datos_election |> 
-  filter(censo > 100000) |>  
-    group_by(anno, cod_mun) |>   
-    slice_max(votos, n = 2, with_ties = FALSE) |>   
-    mutate(posicao = row_number()) |>
+#| code-fold: true
+#| results: "hide"
+# Función para identificar el segundo partido cuando el primero es el especificado
+partido_vencedor1 <- function(partido_venc) {
+  election_filtered |> 
+    filter(censo > 100000) |>                # Filtrar por municipios con más de 100,000 habitantes
+    group_by(anno,mes, municipio) |>             # Agrupar por año y municipio
+    arrange(desc(votos)) |>                  # Ordenar por número de votos en orden descendente
+    mutate(posicion = row_number()) |>       # Asignar posición (1 = primero, 2 = segundo)
     summarise(
-    primero_partido = partidos[posicao == 1],
-    segundo_partido = partidos[posicao == 2]) |> 
-    filter(primero_partido == partido_venc)
+      primero_partido = partidos[posicion == 1],  # Partido ganador
+      segundo_partido = partidos[posicion == 2], # Partido en segundo lugar
+      .groups = "drop"
+    ) |> 
+    filter(primero_partido == partido_venc)  # Filtrar para que el partido ganador sea el especificado
+}
+# Obtener resultados cuando el primero es PSOE
+resultados_psoe <- partido_vencedor1("PSOE")
+# Obtener resultados cuando el primero es PP
+resultados_pp <- partido_vencedor1("PP")
+# Mostrar los resultados
+resultados_psoe
+resultados_pp
+
+```
+
+Posteriormente sobre el mismo código eliminamos los municipios en los que el partido ganador y el segundo ganador es el mismo
+
+```{r}
+#| code-fold: true
+#| results: "hide"
+partido_vencedor <- function(partido_venc) {
+  election_filtered |> 
+    filter(censo > 100000) |>                 # Filtrar por municipios con más de 100,000 habitantes
+    group_by(anno, mes, municipio) |>         # Agrupar por año, mes y municipio
+    arrange(desc(votos)) |>                   # Ordenar por número de votos en orden descendente
+    mutate(posicion = row_number()) |>        # Asignar posición (1 = primero, 2 = segundo, etc.)
+    filter(
+      (posicion == 1 & partidos == partido_venc) |  # Mantener el ganador que corresponde al filtro
+      (posicion == 2 & partidos != partido_venc)    # Asegurar que el segundo partido sea diferente al ganador
+    ) |> 
+    reframe(
+      primero_partido = partidos[posicion == 1],
+      segundo_partido = partidos[posicion == 2],
+      anno = unique(anno),      # Asegurar que el año se incluya
+      mes = unique(mes),
+      municipio = unique(municipio)
+    )
 }
 
+# Obtener resultados cuando el primero es PSOE
+resultados_psoe <- partido_vencedor("PSOE")
+
+# Obtener resultados cuando el primero es PP
+resultados_pp <- partido_vencedor("PP")
+
+# Mostrar los resultados ajustados
+resultados_psoe
+resultados_pp
+
+
 ```
+
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+##  {background-color="#e6f0fa"}
 
 #### [Pregunta 2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?]{style="color: #f08b27;"}
 
 ```{r}
 #| code-fold: true
+library(ggplot2)
 
-head(partido_vencedor("PSOE"))
+# Crear un dataset combinado para ambos casos (PSOE y PP)
+resultados_psoe <- partido_vencedor("PSOE") |> mutate(ganador = "PSOE")
+resultados_pp <- partido_vencedor("PP") |> mutate(ganador = "PP")
+resultados_comb <- bind_rows(resultados_psoe, resultados_pp)
 
-```
+# Gráfico de barras apiladas
+ggplot(resultados_comb, aes(x = ganador, fill = segundo_partido)) +
+  geom_bar() +
+   geom_text(
+    stat = "count",  # Calcula automáticamente el conteo
+    aes(
+      label = ..count..  # Etiqueta con el conteo
+    ),
+    position = position_stack(vjust = 0.5),  # Centrar las etiquetas en las barras
+    color = "white",  # Color de las etiquetas
+    size = 3, 
+    color = "white"
+  ) +
+  scale_fill_manual(
+    values = c(
+     "VOX" = "#80b042",      
+      "PP" = "#004a95",
+      "PSOE" = "#e30613",
+      "UP" = "#a668f3",
+      "CS" = "#ff956a",
+      "PNV" = "#917b66",
+      "ERC" = "#edc158",
+      "OTROS" = "gray" 
+    )
+  ) +
+  labs(
+    title = "Distribución de Segundos Partidos por Partido Ganador",
+    x = "Partido Ganador",
+    y = "Número de Municipios",
+    fill = "Segundo Partido"
+  ) +
+  theme_minimal()
 
-```{r}
-#| code-fold: true
-
-head(partido_vencedor("PP"))
 
 ```
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+##  {background-color="#e6f0fa"}
 
 #### [Pregunta 3: ¿Cómo calibrar el error de las encuestas (recordemos que las encuestas son de intención de voto a nivel nacional)?]{style="color: #f08b27;"}
 
+```{r}
+#| code-fold: true
+
+# Función para calibrar el error y generar tablas de salida
+calibrar_error <- function(election_data, surveys) {
+
+  
+  # Preparación de los datos de las elecciones: cálculo del porcentaje real de votos
+  election_data_grouped <- election_data |>
+    group_by(anno, partidos) |>
+    summarise(
+      actual_votes = sum(votos, na.rm = TRUE), # Total de votos por partido
+      total_votes = sum(votos_candidaturas, na.rm = TRUE), # Total de votos válidos
+      .groups = "drop"
+    ) |>
+    mutate(
+      actual_share_percent = (actual_votes / total_votes) * 100 # Porcentaje real de votos
+    )
+  
+  # Vincular encuestas con resultados reales
+  datos_combinados <- surveys |>
+    inner_join(election_data_grouped, 
+               by = c("ano_elec" = "anno", "partidos" = "partidos")) |>
+    mutate(
+      error = prob_votos - actual_share_percent # Error: diferencia entre encuesta y resultado real
+    )
+  
+  # Crear tabla con porcentajes
+  tabla_procentajes <- datos_combinados |>
+    select(
+      ano_elec, partidos, prob_votos, actual_share_percent, error
+    )
+  
+  # Análisis del error: promedio y desviación estándar por partido
+  errores <- datos_combinados |>
+    group_by(partidos) |>
+    summarise(
+      mean_error = mean(error, na.rm = TRUE), # Error promedio
+      sd_error = sd(error, na.rm = TRUE), # Desviación estándar del error
+      n = n(), # Número de observaciones
+      .groups = "drop"
+    )
+  
+  list(
+    tabla_procentajes = tabla_procentajes, # Tabla con porcentajes
+    errores = errores # Estadísticas del error
+  )
+}
+
+# Aplicar la función a los conjuntos de datos para todos los años
+resultados <- calibrar_error(election_data_tidy_select, surveys_tidy_select)
+
+# Resultados
+tabla_procentajes <- resultados$tabla_procentajes # Tabla con porcentajes estimados y reales
+errores <- resultados$errores # Estadísticas del error
+
+# Mostrar las tablas
+print(tabla_procentajes) # Vista previa de la tabla con porcentajes
+print(errores) # Estadísticas del error
+```
+
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+##  {background-color="#e6f0fa"}
 
 #### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
 
@@ -363,7 +530,7 @@ Siguiendo la clasificación establecida por el Ministerio de Agricultura y Pesca
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+##  {background-color="#e6f0fa"}
 
 #### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
 
@@ -371,8 +538,8 @@ Con base en esta clasificación, hemos creado la variable "tipo_zona" como paso 
 
 ```{r}
 #| code-fold: true
-
-datos_election <- datos_election |> 
+#| results: "hide"
+distribucion_voto <- election_filtered |> 
   mutate(tipo_zona = case_when(
     censo < 2000 ~ "Rural",
     censo >= 2000 & censo <= 10000 ~ "Semiurbano",
@@ -383,35 +550,132 @@ datos_election <- datos_election |>
                          levels = c("Rural", "Semiurbano", "Urbano"),
                          ordered = TRUE))
 
-head(datos_election)
+# Agrupación por tipo de zona y partidos
+
+porc_distribucion_voto <- distribucion_voto |> 
+  group_by(tipo_zona) |> 
+  mutate(total_votos_zona = sum(votos, na.rm = TRUE)) |> 
+  group_by(tipo_zona, partidos) |> 
+  summarise(
+    total_votos_partido = sum(votos, na.rm = TRUE),
+    porcentaje_votos = (total_votos_partido / total_votos_zona[1]) * 100, 
+    .groups = "drop"
+  )
+
+# Ver el resultado
+porc_distribucion_voto
+
+
+```
+
+```{r}
+#| code-fold: true
+ggplot(porc_distribucion_voto, aes(x = tipo_zona, y = porcentaje_votos, fill = partidos)) +
+  geom_bar(stat = "identity", position = "fill") +
+  geom_text(
+    aes(
+      label = paste0(round(porcentaje_votos, 1), "%")
+    ),
+    position = position_fill(vjust = 0.5), # Centra las etiquetas en las barras
+    size = 3, 
+    color = "white"
+  ) +
+  scale_fill_manual(
+    values = c(
+     "VOX" = "#80b042",      
+      "PP" = "#004a95",
+      "PSOE" = "#e30613",
+      "UP" = "#a668f3",
+      "CS" = "#ff956a",
+      "PNV" = "#917b66",
+      "ERC" = "#edc158",
+      "OTROS" = "gray" 
+    )
+  ) +
+  labs(
+    title = "Distribución de votos por tipo de zona",
+    x = "Tipo de zona",
+    y = "Porcentaje de votos (%)",
+    fill = "Partidos"
+  ) +
+  scale_y_continuous(labels = scales::percent_format(scale = 100)) +
+  theme_minimal()
 ```
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
+Si los votos (votos) son valores numéricos y deseas analizar si las medias de votos difieren significativamente entre tipos de zona para cada partido, puedes usar ANOVA.
+
+```{r}
+#| code-fold: true
+# Crear tabla de contingencia
+tabla_contingencia <- distribucion_voto |>
+  group_by(tipo_zona, partidos) |>
+  summarise(
+    total_votos = sum(votos, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  pivot_wider(
+    names_from = partidos,
+    values_from = total_votos,
+    values_fill = 0
+  )
+
+# Convertir a matriz para el test de Chi-cuadrado
+matriz_contingencia <- as.matrix(tabla_contingencia[, -1]) # Eliminar la columna 'tipo_zona'
+
+# Realizar el test de Chi-cuadrado
+test_chi2 <- chisq.test(matriz_contingencia)
+
+# Resultados del test
+print(test_chi2)
+
+# Evaluar residuales estandarizados (para ver dónde están las mayores diferencias)
+residuales_estandarizados <- test_chi2$stdres
+print(residuales_estandarizados)
+
+```
+El análisis confirma que existe una relación estadísticamente significativa entre el tipo de zona y el voto a un partido político. Esto sugiere que ciertos partidos tienen más apoyo en zonas rurales, semiurbanas o urbanas, y que este patrón es consistente.
+
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
+
+
+
+NO ME FUNCIONA ME QUEDO POR AQUI PREGUNTAR A CHAT GPT POR Análisis de correlación entre el censo poblacional y el porcentaje de votos por partido
+
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
 
 #### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
 
 ```{r}
 # Reordenando los partidos 
-datos_election <- 
-  datos_election |> 
+datos_distribucion_voto <- 
+  distribucion_voto |> 
   mutate("median_votos" = median(votos), .by = c(tipo_zona,partidos)) |>
   mutate("partidos" = fct_reorder(partidos, median_votos))
 
 # Remover outliers usando a regra do IQR
-q1 <- quantile(datos_election$votos, 0.25)
-q3 <- quantile(datos_election$votos, 0.75)
+q1 <- quantile(datos_distribucion_voto$votos, 0.25)
+q3 <- quantile(datos_distribucion_voto$votos, 0.75)
 iqr <- q3 - q1
 
 # Filtrando os dados para remover outliers
-datos_election_clean <- datos_election |>
+datos_election_clean <- datos_distribucion_voto |>
   filter(votos >= (q1 - 1.5 * iqr) & votos <= (q3 + 1.5 * iqr))
 ```
 
 ------------------------------------------------------------------------
 
-##  {background-color="#8bdbfa"}
+##  {background-color="#e6f0fa"}
 
 #### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
 
@@ -430,8 +694,92 @@ ggplot(datos_election_clean) +
 
 ```
 
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 5: ¿Cúal es la evolución en la participación (participación_1 y participación_2) en los municipios con más de 50.000 habitantes, y cómo varía según el partido más votado?]{style="color: #f08b27;"}
+
+-   El **Partido Popular (PP)** y el **Partido Socialista Obrero Español (PSOE)** dominan en participación acumulada, con líneas más destacadas y continuas en todos los periodos.
+
+-   Otros partidos como **ERC, PNV y UP** muestran una participación más estable y con menos variabilidad.
+
+-   **Vox y Ciudadanos (CS)** tienen líneas menos pronunciadas, indicando que su impacto es menor en municipios grandes.
+
+-   El año más reciente (probablemente 2019) muestra un aumento drástico en participación para los municipios donde ganó el **PSOE**.
+
+-   Esto sugiere que, aunque el PP mantiene una base de participación estable, el PSOE ha conseguido movilizar a más votantes recientemente.
+
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 5: ¿Cúal es la evolución en la participación (participación_1 y participación_2) en los municipios con más de 50.000 habitantes, y cómo varía según el partido más votado?]{style="color: #f08b27;"}
+
+```{r}
+#| code-fold: true
+
+# Filtrar municipios con más de 50.000 habitantes
+municipios_grandes <- datos_election |> 
+  filter(censo > 50000) 
+
+# Calcular la suma de participación y votos por municipio y año
+participacion_municipios <- municipios_grandes |> 
+  group_by(anno, cod_mun, municipio) |> 
+  summarise(
+    participacion_1 = sum(participacion_1),
+    participacion_2 = sum(participacion_2),
+    votos_totales = sum(votos),
+    partido_ganador = partidos[which.max(votos)]
+  ) |> 
+  ungroup()
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 5: ¿Cúal es la evolución en la participación (participación_1 y participación_2) en los municipios con más de 50.000 habitantes, y cómo varía según el partido más votado?]{style="color: #f08b27;"}
+
+```{r}
+#| code-fold: true
+
+# Visualizar la evolución de la participación por partido
+ggplot(participacion_municipios, aes(x = anno, y = participacion_1, color = partido_ganador)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Evolución de la Participación en Municipios con Más de 50.000 Habitantes",
+    x = "Año",
+    y = "Participación (Primera Vuelta)",
+    color = "Partido Ganador"
+  ) +
+  theme_minimal()
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 6: ¿Cuál fue el partido más votado en cada municipio durante el año más reciente disponible en el dataset?]{style="color: #f08b27;"}
+
+```{r}
+#| code-fold: true
 
 
+# Filtrar el año más reciente
+anio_reciente <- max(datos_election$anno)
 
+# Filtrar datos del año más reciente
+datos_recientes <- datos_election |> 
+  filter(anno == anio_reciente)
 
+# Determinar el partido más votado por municipio
+partido_ganador_municipio <- datos_recientes |> 
+  group_by(municipio) |> 
+  summarise(partido_ganador = partidos[which.max(votos)]) |> 
+  ungroup()
 
+# Mostrar resultados
+print(partido_ganador_municipio)
+```
