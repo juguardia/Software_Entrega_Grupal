@@ -128,8 +128,16 @@ election_data_tidy <- election_data |>
                 names_to = "partidos", 
                 values_to = "votos" ,
                 values_drop_na = TRUE
-  ) |> unite(c("codigo_ccaa","codigo_provincia", "codigo_municipio"),col="cod_mun",sep='-')
+  ) |> 
+  unite(c("codigo_ccaa","codigo_provincia", "codigo_municipio"),col="cod_mun",sep='-')|> 
+  mutate(conv_elec = paste(mes, anno, sep = "-"))  # creo una nueva variable conv_elec
 
+# Especificar el orden deseado para conv_elec
+orden_conv_elec <- c("03-2008", "11-2011", "12-2015", "06-2016", "04-2019", "11-2019")
+
+# Convertir conv_elec en un factor con el orden especificado
+election_data_tidy <- election_data_tidy |> 
+  mutate(conv_elec = factor(conv_elec, levels = orden_conv_elec))
 
 ```
 
@@ -237,7 +245,7 @@ election_filtered <- election_data_tidy |>
 
 # Selecion previa de las variables 
 election_data_tidy_select <- election_filtered |>
-  select('anno', 'cod_mun', 'numero_mesas','censo', 'participacion_1', 'participacion_2', 'votos_blancos', 'votos_nulos','votos_candidaturas','partidos','votos')
+  select('anno', 'cod_mun', 'numero_mesas','censo', 'participacion_1', 'participacion_2', 'votos_blancos', 'votos_nulos','votos_candidaturas','partidos','votos', 'conv_elec')
 
 surveys_tidy_select <- surveys_filtered |>
   select('size', 'turnout', 'partidos', 'prob_votos', 'ano_elec','tiempo_trabajo_campo', 'id_pollster', 'pollster', 'media') |> 
@@ -245,10 +253,54 @@ surveys_tidy_select <- surveys_filtered |>
          'estimacion_participac' = 'turnout')
 
 # Join
-datos_election <- election_data_tidy_select |> 
-  left_join(cod_mun, by = "cod_mun")
+datos_election <- election_data_tidy_select
 
 ```
+
+
+------------------------------------------------------------------------
+
+## [Descripción de la base de datos 'election_data']{style="color: #247292;"} {background-color="#e6f0fa"}
+
+```{r}
+#| code-fold: true
+# Calcular estadísticas para la convocatoria electoral general
+descripcion_convocatoria <- election_filtered |> 
+  group_by(conv_elec) |>
+  summarise(
+    num_municipios = n_distinct(cod_mun),  # Número total de municipios
+    total_votos = sum(votos, na.rm = TRUE),  # Total de votos
+    total_censo = sum(censo, na.rm = TRUE),  # Total de censo
+    tasa_participacion = total_votos / total_censo * 100,  # Tasa de participación
+    prom_participacion = mean(votos / censo * 100, na.rm = TRUE)  # Promedio de participación
+  )
+
+# Filtrar los municipios con más de 100,000 habitantes
+censo_100k <- election_filtered |> 
+  filter(censo > 100000)
+
+# Calcular estadísticas para la convocatoria electoral en municipios con más de 100k de censo
+descripcion_convocatoria_100k <- censo_100k |> 
+  group_by(conv_elec) |>
+  summarise(
+    num_municipios_100k = n_distinct(cod_mun),  # Número total de municipios con 100k
+    total_votos_100k = sum(votos, na.rm = TRUE),  # Total de votos en municipios con censo > 100k
+    total_censo_100k = sum(censo, na.rm = TRUE),  # Total de censo en municipios con censo > 100k
+    tasa_participacion_100k = total_votos_100k / total_censo_100k * 100,  # Tasa de participación
+    prom_participacion_100k = mean(votos / censo * 100, na.rm = TRUE)  # Promedio de participación  
+)
+
+# Unir ambas tablas por la columna 'conv_elec'
+descripcion_convocatoria <- descripcion_convocatoria |> 
+  left_join(descripcion_convocatoria_100k, by = "conv_elec") |> 
+  select(conv_elec,num_municipios,tasa_participacion,prom_participacion,num_municipios_100k, tasa_participacion_100k,prom_participacion_100k)
+
+# Mostrar la tabla con las estadísticas calculadas
+descripcion_convocatoria
+
+```
+
+
 
 ------------------------------------------------------------------------
 
@@ -258,35 +310,20 @@ datos_election <- election_data_tidy_select |>
 
 ```{r}
 #| code-fold: true
-tabla_ganadores <- election_filtered |> 
-  filter(censo > 100000) |> 
-  arrange(municipio, anno, mes, desc(votos)) |> 
-  summarise(vencedor = first(partidos), .by = c(anno, mes, municipio)) 
+tabla_ganadores <- censo_100k |> 
+  arrange(conv_elec, mes, desc(votos)) |> 
+  summarise(vencedor = first(partidos), .by = c(conv_elec, municipio)) 
 ```
 
 ```{r}
 #| code-fold: true
 # Agrupación de ganadores por año
 ganadores_por_anno <- tabla_ganadores |> 
-  group_by(anno, vencedor) |> 
+  group_by(conv_elec, vencedor) |> 
   summarise(count = n(), .groups = "drop")
 
-# Identificar los 3 partidos predominantes por número total de municipios ganados
-partidos_predominantes <- ganadores_por_anno |> 
-  group_by(vencedor) |> 
-  summarise(total_municipios = sum(count), .groups = "drop") |> 
-  arrange(desc(total_municipios)) |> 
-  slice_head(n = 3) |> 
-  pull(vencedor)
-
-# Agrupar los partidos no predominantes como "OTROS"
-ganadores_agrupados <- ganadores_por_anno |> 
-  mutate(vencedor = ifelse(vencedor %in% partidos_predominantes, vencedor, "OTROS")) |> 
-  group_by(anno, vencedor) |> 
-  summarise(count = sum(count), .groups = "drop") # Sumar los valores de "OTROS"
-
-# Graficar con los partidos agrupados
-ggplot(ganadores_agrupados, aes(x = anno, y = count, fill = vencedor)) +
+# Mostrar resultados de los partidos ganadores en cada convocatoria
+ggplot(ganadores_por_anno, aes(x = conv_elec, y = count, fill = vencedor)) +
   geom_bar(stat = "identity", position = "stack") +
    geom_text(
     aes(
@@ -296,8 +333,10 @@ ggplot(ganadores_agrupados, aes(x = anno, y = count, fill = vencedor)) +
     size = 3, 
     color = "white"
   ) +
-  scale_x_continuous(breaks = unique(ganadores_agrupados$anno),  # Etiquetas de años
-                     labels = unique(ganadores_agrupados$anno)) +
+   scale_x_discrete(  # Cambiar a escala discreta
+    breaks = orden_conv_elec,  # Etiquetas en el orden deseado
+    labels = orden_conv_elec
+  ) +
   scale_fill_manual(
     values = c(
       "VOX" = "#80b042",      
@@ -312,7 +351,7 @@ ggplot(ganadores_agrupados, aes(x = anno, y = count, fill = vencedor)) +
   ) +
   labs(
     title = "Distribución de Partidos Ganadores por Año",
-    x = "Año",
+    x = "Convocatoria electoral",
     y = "Número de Municipios",
     fill = "Partido Ganador"
   ) +
@@ -329,18 +368,17 @@ ggplot(ganadores_agrupados, aes(x = anno, y = count, fill = vencedor)) +
 
 ##  {background-color="#e6f0fa"}
 
-#### [Pregunta 2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?]{style="color: #f08b27;"}
+#### [Pregunta 2.1: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?]{style="color: #f08b27;"}
 
-Primero identificamos el partido ganador y el segundo partido genador en cada una de las elecciones
+Primero identificamos el partido ganador y el segundo partido ganador en cada una de las elecciones
 
 ```{r}
 #| code-fold: true
 #| results: "hide"
 # Función para identificar el segundo partido cuando el primero es el especificado
 partido_vencedor1 <- function(partido_venc) {
-  election_filtered |> 
-    filter(censo > 100000) |>                # Filtrar por municipios con más de 100,000 habitantes
-    group_by(anno,mes, municipio) |>             # Agrupar por año y municipio
+  censo_100k |> 
+    group_by(conv_elec, municipio) |>         # Agrupar por convocatoria electoral y municipio
     arrange(desc(votos)) |>                  # Ordenar por número de votos en orden descendente
     mutate(posicion = row_number()) |>       # Asignar posición (1 = primero, 2 = segundo)
     summarise(
@@ -359,16 +397,65 @@ resultados_psoe
 resultados_pp
 
 ```
+Hay en municipios que son unipartidistas
+```{r}
+#| code-fold: true
+# Calcular número de municipios unipartidistas
+mun_unipartidistas <- function(resultados) {
+  resultados |> 
+    mutate(solo_un_partido = primero_partido == segundo_partido) |>  # Identificar si el primero y el segundo partido son iguales
+    summarise(
+      municipios_unipartidistas = sum(solo_un_partido, na.rm = TRUE),  # Contar municipios unipartidistas
+      total_municipios = n_distinct(municipio),                                         # Total de municipios
+      porcentaje_unipartidistas = (municipios_unipartidistas / total_municipios) * 100,  # Calcular porcentaje
+      .by = conv_elec                                              # Agrupar por convocatoria electoral
+    )
+}
 
-Posteriormente sobre el mismo código eliminamos los municipios en los que el partido ganador y el segundo ganador es el mismo
+# Aplicar la función a los resultados de PSOE y PP
+municipios_unipartidistas_psoe <- mun_unipartidistas(resultados_psoe)
+municipios_unipartidistas_pp <- mun_unipartidistas(resultados_pp)
+
+# Crear una nueva tabla con los resultados de los municipios unipartidistas para cada partido
+resultados_unipartidistas <- municipios_unipartidistas_psoe |> 
+  left_join(municipios_unipartidistas_pp, by = "conv_elec", suffix = c("_psoe", "_pp")) |> 
+  mutate(
+    total_municipios = total_municipios_psoe + total_municipios_pp,  # Sumar los municipios totales
+    unipartidistas_pp = municipios_unipartidistas_pp,  # Unipartidistas para PP
+    unipartidistas_psoe = municipios_unipartidistas_psoe  # Unipartidistas para PSOE
+  ) |> 
+  select(
+    conv_elec, 
+    unipartidistas_psoe, 
+    unipartidistas_pp, 
+    total_municipios
+  )  # Seleccionar las columnas relevantes
+
+# Calcular el porcentaje de municipios unipartidistas para PP y PSOE
+resultados_unipartidistas <- resultados_unipartidistas |> 
+  mutate(
+    porcentaje_unipartidistas_psoe = round((unipartidistas_psoe / total_municipios) * 100, 1),  # Porcentaje de municipios unipartidistas PSOE
+    porcentaje_unipartidistas_pp = round((unipartidistas_pp / total_municipios) * 100, 1) # Porcentaje de municipios unipartidistas PP
+  )
+# Mostrar la tabla con los resultados
+resultados_unipartidistas
+
+```
+
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 2.2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?]{style="color: #f08b27;"}
+
+Para ello vamos a eliminar los municipios en los que el partido ganador y el segundo ganador es el mismo
 
 ```{r}
 #| code-fold: true
 #| results: "hide"
 partido_vencedor <- function(partido_venc) {
-  election_filtered |> 
-    filter(censo > 100000) |>                 # Filtrar por municipios con más de 100,000 habitantes
-    group_by(anno, mes, municipio) |>         # Agrupar por año, mes y municipio
+  censo_100k |> 
+    group_by(conv_elec, municipio) |>         # Agrupar por año, mes y municipio
     arrange(desc(votos)) |>                   # Ordenar por número de votos en orden descendente
     mutate(posicion = row_number()) |>        # Asignar posición (1 = primero, 2 = segundo, etc.)
     filter(
@@ -378,8 +465,7 @@ partido_vencedor <- function(partido_venc) {
     reframe(
       primero_partido = partidos[posicion == 1],
       segundo_partido = partidos[posicion == 2],
-      anno = unique(anno),      # Asegurar que el año se incluya
-      mes = unique(mes),
+      conv_elec = unique(conv_elec),
       municipio = unique(municipio)
     )
 }
@@ -394,20 +480,15 @@ resultados_pp <- partido_vencedor("PP")
 resultados_psoe
 resultados_pp
 
-
 ```
-
-
 ------------------------------------------------------------------------
 
 ##  {background-color="#e6f0fa"}
 
-#### [Pregunta 2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?]{style="color: #f08b27;"}
+#### [Pregunta 2.2: ¿Qué partido fue el segundo cuando el primero fue el PSOE? ¿Y cuando el primero fue el PP?]{style="color: #f08b27;"}
 
 ```{r}
 #| code-fold: true
-library(ggplot2)
-
 # Crear un dataset combinado para ambos casos (PSOE y PP)
 resultados_psoe <- partido_vencedor("PSOE") |> mutate(ganador = "PSOE")
 resultados_pp <- partido_vencedor("PP") |> mutate(ganador = "PP")
@@ -444,9 +525,8 @@ ggplot(resultados_comb, aes(x = ganador, fill = segundo_partido)) +
     y = "Número de Municipios",
     fill = "Segundo Partido"
   ) +
-  theme_minimal()
-
-
+  theme_minimal()+
+  facet_wrap(~ conv_elec)  # Crear un gráfico por cada convocatoria electoral
 ```
 
 ------------------------------------------------------------------------
@@ -516,6 +596,30 @@ print(tabla_procentajes) # Vista previa de la tabla con porcentajes
 print(errores) # Estadísticas del error
 ```
 
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 3: ¿Cómo calibrar el error de las encuestas (recordemos que las encuestas son de intención de voto a nivel nacional)?]{style="color: #f08b27;"}
+Comparamos los porcentajes de votos reales y los porcentajes de las encuestas por partido en cada elección, para ver que partidos son sobrestimados o subestimados.
+
+```{r}
+#| code-fold: true
+# Crear gráfico de barras para comparar prob_votos (encuesta) vs actual_share_percent (votos reales)
+ggplot(tabla_procentajes, aes(x = partidos, y = prob_votos, fill = "Encuesta")) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.7) +
+  geom_bar(aes(y = actual_share_percent, fill = "Votos Reales"), stat = "identity", position = "dodge", alpha = 0.7) +
+  scale_fill_manual(values = c("Encuesta" = "lightblue", "Votos Reales" = "orange")) +
+  labs(
+    title = "Comparación de Porcentajes: Encuestas vs Votos Reales",
+    x = "Partido",
+    y = "Porcentaje de Votos",
+    fill = "Fuente"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
 ------------------------------------------------------------------------
 
 ##  {background-color="#e6f0fa"}
@@ -607,179 +711,131 @@ ggplot(porc_distribucion_voto, aes(x = tipo_zona, y = porcentaje_votos, fill = p
 ##  {background-color="#e6f0fa"}
 
 #### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
-Si los votos (votos) son valores numéricos y deseas analizar si las medias de votos difieren significativamente entre tipos de zona para cada partido, puedes usar ANOVA.
 
 ```{r}
 #| code-fold: true
-# Crear tabla de contingencia
-tabla_contingencia <- distribucion_voto |>
-  group_by(tipo_zona, partidos) |>
+# Calcular el porcentaje de votos por partido en cada municipio
+distribucion_voto_por_partido <- distribucion_voto |>
+  group_by(cod_mun, partidos) |>
   summarise(
-    total_votos = sum(votos, na.rm = TRUE),
+    total_votos_partido = sum(votos, na.rm = TRUE),
+    total_votos_mun = sum(votos_candidaturas, na.rm = TRUE), # Total de votos válidos en el municipio
     .groups = "drop"
   ) |>
-  pivot_wider(
-    names_from = partidos,
-    values_from = total_votos,
-    values_fill = 0
+  mutate(
+    porcentaje_votos = (total_votos_partido / total_votos_mun) * 100
   )
 
-# Convertir a matriz para el test de Chi-cuadrado
-matriz_contingencia <- as.matrix(tabla_contingencia[, -1]) # Eliminar la columna 'tipo_zona'
+# Unir con el censo poblacional de cada municipio
+datos_completos <- distribucion_voto_por_partido |>
+  left_join(election_filtered |> select(cod_mun, censo), by = "cod_mun")
 
-# Realizar el test de Chi-cuadrado
-test_chi2 <- chisq.test(matriz_contingencia)
-
-# Resultados del test
-print(test_chi2)
-
-# Evaluar residuales estandarizados (para ver dónde están las mayores diferencias)
-residuales_estandarizados <- test_chi2$stdres
-print(residuales_estandarizados)
-
-```
-El análisis confirma que existe una relación estadísticamente significativa entre el tipo de zona y el voto a un partido político. Esto sugiere que ciertos partidos tienen más apoyo en zonas rurales, semiurbanas o urbanas, y que este patrón es consistente.
-
-------------------------------------------------------------------------
-
-##  {background-color="#e6f0fa"}
-
-#### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
-
-
-
-NO ME FUNCIONA ME QUEDO POR AQUI PREGUNTAR A CHAT GPT POR Análisis de correlación entre el censo poblacional y el porcentaje de votos por partido
-
-------------------------------------------------------------------------
-
-##  {background-color="#e6f0fa"}
-
-#### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
-
-```{r}
-# Reordenando los partidos 
-datos_distribucion_voto <- 
-  distribucion_voto |> 
-  mutate("median_votos" = median(votos), .by = c(tipo_zona,partidos)) |>
-  mutate("partidos" = fct_reorder(partidos, median_votos))
-
-# Remover outliers usando a regra do IQR
-q1 <- quantile(datos_distribucion_voto$votos, 0.25)
-q3 <- quantile(datos_distribucion_voto$votos, 0.75)
-iqr <- q3 - q1
-
-# Filtrando os dados para remover outliers
-datos_election_clean <- datos_distribucion_voto |>
-  filter(votos >= (q1 - 1.5 * iqr) & votos <= (q3 + 1.5 * iqr))
-```
-
-------------------------------------------------------------------------
-
-##  {background-color="#e6f0fa"}
-
-#### [Pregunta 4: ¿Cómo analizar la relación entre censo y voto? ¿Es cierto que determinados partidos ganan en las zonas rurales?]{style="color: #f08b27;"}
-
-```{r}
-#| code-fold: true
-
-# boxplot
-ggplot(datos_election_clean) +
-  geom_boxplot(aes(x = partidos, y = votos, fill = median_votos ),
-               alpha = 0.5) +
-  scale_fill_gradient2(low = "red", mid = "white", high = "green",
-                       midpoint = 2000) +
-  facet_wrap(~tipo_zona,scales = "free_y") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90))
-
-```
-
-------------------------------------------------------------------------
-
-##  {background-color="#e6f0fa"}
-
-#### [Pregunta 5: ¿Cúal es la evolución en la participación (participación_1 y participación_2) en los municipios con más de 50.000 habitantes, y cómo varía según el partido más votado?]{style="color: #f08b27;"}
-
--   El **Partido Popular (PP)** y el **Partido Socialista Obrero Español (PSOE)** dominan en participación acumulada, con líneas más destacadas y continuas en todos los periodos.
-
--   Otros partidos como **ERC, PNV y UP** muestran una participación más estable y con menos variabilidad.
-
--   **Vox y Ciudadanos (CS)** tienen líneas menos pronunciadas, indicando que su impacto es menor en municipios grandes.
-
--   El año más reciente (probablemente 2019) muestra un aumento drástico en participación para los municipios donde ganó el **PSOE**.
-
--   Esto sugiere que, aunque el PP mantiene una base de participación estable, el PSOE ha conseguido movilizar a más votantes recientemente.
-
-------------------------------------------------------------------------
-
-##  {background-color="#e6f0fa"}
-
-#### [Pregunta 5: ¿Cúal es la evolución en la participación (participación_1 y participación_2) en los municipios con más de 50.000 habitantes, y cómo varía según el partido más votado?]{style="color: #f08b27;"}
-
-```{r}
-#| code-fold: true
-
-# Filtrar municipios con más de 50.000 habitantes
-municipios_grandes <- datos_election |> 
-  filter(censo > 50000) 
-
-# Calcular la suma de participación y votos por municipio y año
-participacion_municipios <- municipios_grandes |> 
-  group_by(anno, cod_mun, municipio) |> 
+# Calcular la correlación de Pearson entre el censo y el porcentaje de votos para cada partido
+correlaciones <- datos_completos |>
+  group_by(partidos) |>
   summarise(
-    participacion_1 = sum(participacion_1),
-    participacion_2 = sum(participacion_2),
-    votos_totales = sum(votos),
-    partido_ganador = partidos[which.max(votos)]
+    correlacion_censo_votos = cor(censo, porcentaje_votos, use = "complete.obs"),
+    .groups = "drop"
+  )
+
+# Ver los resultados de la correlación
+print(correlaciones)
+
+```
+Los coeficientes de correlación indican que ningún partido muestra una correlación fuerte con el censo poblacional. La mayoría de los valores son negativos, pero muy cercanos a cero, lo que sugiere que el tamaño de la población no tiene una relación significativa con el porcentaje de votos recibido por los partidos en la mayoría de los casos.
+
+------------------------------------------------------------------------
+
+##  {background-color="#e6f0fa"}
+
+#### [Pregunta 5: ¿Cómo influye el aumento del censo poblacional de los municipios en la evolución del voto por los partidos? ¿Municipios con un crecimiento poblacional constante tienden a votar de manera diferente que aquellos con una población estable?]{style="color: #f08b27;"}
+
+```{r}
+#| code-fold: true
+# Calcular tasa de crecimiento poblacional por municipio
+crecimiento_censo <- election_filtered |> 
+  arrange(cod_mun, anno) |>  # Asegurarse de que los datos están ordenados por municipio y año
+  group_by(cod_mun) |>  # Agrupar por municipio
+  mutate(
+    tasa_crecimiento = (censo - lag(censo)) / lag(censo) * 100  # Calcular tasa de crecimiento
   ) |> 
   ungroup()
+
+# Categorizar las tasas de crecimiento
+crecimiento_censo <- election_filtered |> 
+  drop_na(censo, votos) |> 
+  arrange(cod_mun, anno) |>   # Asegurarse de que los datos están ordenados por municipio y año
+  group_by(cod_mun) |> 
+  mutate(
+    tasa_crecimiento = (censo - lag(censo)) / lag(censo) * 100,  # Calcular tasa de crecimiento
+    tipo_crecimiento = case_when(
+      tasa_crecimiento > 0.5 ~ "Crecimiento positivo",
+      abs(tasa_crecimiento) <= 0.5 ~ "Crecimiento estable",
+      tasa_crecimiento < -0.5 ~ "Crecimiento negativo",
+      TRUE ~ "Desconocido"
+    )
+  ) |> 
+  ungroup() |> 
+  drop_na(tasa_crecimiento, tipo_crecimiento)  # Eliminar NA en tasa_crecimiento y tipo_crecimiento
+
+# Contar el número de municipios según el tipo de crecimiento
+conteo_municipios_crecimiento <- crecimiento_censo |>
+  group_by(tipo_crecimiento) |>
+  summarise(
+    num_municipios = n_distinct(cod_mun),  # Contar el número de municipios únicos
+    .groups = "drop"
+  )
+# Ver el resultado
+print(conteo_municipios_crecimiento)
+```
+
+
+```{r}
+#| code-fold: true
+# Agrupar por tipo de crecimiento y partido, y calcular la preferencia de voto
+preferencia_voto_crecimiento <- crecimiento_censo |> 
+  group_by(tipo_crecimiento, partidos) |> 
+  summarise(
+    total_votos = sum(votos, na.rm = TRUE),
+    porcentaje_voto = (total_votos / sum(total_votos)) * 100,
+    .groups = "drop"
+  ) |> 
+  drop_na(partidos)  # Eliminar NA en la columna 'partidos'
+
 ```
 
 ------------------------------------------------------------------------
 
 ##  {background-color="#e6f0fa"}
 
-#### [Pregunta 5: ¿Cúal es la evolución en la participación (participación_1 y participación_2) en los municipios con más de 50.000 habitantes, y cómo varía según el partido más votado?]{style="color: #f08b27;"}
+#### [Pregunta 5: ¿Cómo influye el aumento del censo poblacional de los municipios en la evolución del voto por los partidos? ¿Municipios con un crecimiento poblacional constante tienden a votar de manera diferente que aquellos con una población estable?]{style="color: #f08b27;"}
 
 ```{r}
 #| code-fold: true
+# Filtrar valores válidos en la columna 'partidos'
+preferencia_voto_crecimiento <- preferencia_voto_crecimiento |> 
+  filter(!is.na(partidos) & partidos != "OTROS")  # Filtra cualquier NA o "OTROS" si es necesario
 
-# Visualizar la evolución de la participación por partido
-ggplot(participacion_municipios, aes(x = anno, y = participacion_1, color = partido_ganador)) +
-  geom_line() +
-  geom_point() +
+# Gráfico de barras apiladas para visualizar la preferencia de voto según el crecimiento poblacional
+ggplot(preferencia_voto_crecimiento, aes(x = tipo_crecimiento, y = porcentaje_voto, fill = partidos)) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_fill_manual(values = c(
+    "VOX" = "#80b042",      
+    "PP" = "#004a95",
+    "PSOE" = "#e30613",
+    "UP" = "#a668f3",
+    "CS" = "#ff956a",
+    "PNV" = "#917b66",
+    "ERC" = "#edc158",
+    "EH - BILDU"= "#03cfb5",
+    "BNG" = "#76b3dd"
+  )) +
   labs(
-    title = "Evolución de la Participación en Municipios con Más de 50.000 Habitantes",
-    x = "Año",
-    y = "Participación (Primera Vuelta)",
-    color = "Partido Ganador"
+    title = "Preferencia de Voto por Partido según el Tipo de Crecimiento Poblacional",
+    x = "Tipo de Crecimiento Poblacional",
+    y = "Porcentaje de Voto (%)",
+    fill = "Partidos"
   ) +
+  scale_y_continuous(labels = scales::percent_format(scale = 100)) +  # Modificar escala para mostrar 0 a 100
   theme_minimal()
-```
-
-------------------------------------------------------------------------
-
-##  {background-color="#e6f0fa"}
-
-#### [Pregunta 6: ¿Cuál fue el partido más votado en cada municipio durante el año más reciente disponible en el dataset?]{style="color: #f08b27;"}
-
-```{r}
-#| code-fold: true
-
-
-# Filtrar el año más reciente
-anio_reciente <- max(datos_election$anno)
-
-# Filtrar datos del año más reciente
-datos_recientes <- datos_election |> 
-  filter(anno == anio_reciente)
-
-# Determinar el partido más votado por municipio
-partido_ganador_municipio <- datos_recientes |> 
-  group_by(municipio) |> 
-  summarise(partido_ganador = partidos[which.max(votos)]) |> 
-  ungroup()
-
-# Mostrar resultados
-print(partido_ganador_municipio)
 ```
